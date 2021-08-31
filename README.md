@@ -1,1 +1,2 @@
-esp32_bluetooth_classic_sniffer
+# ESP32 BR/EDR Active Sniffer
+
