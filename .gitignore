@@ -1,6 +1,6 @@
 
 firmware/.pio/
 
-libs/__pycache__/
-
 *__pycache__*
+
+dissectors/build/
