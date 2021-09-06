@@ -86,7 +86,7 @@ You can modify or add BT profiles to the current programs by following the offic
 
 ### General Architecture
 
-The custom ESP32 BR/EDR Sniffer/Injector firmware communicates with the host system over a USB serial port and waits to receive custom commands or common HCI commands. At startup, an HCI bridge is created to separate custom command and Baseband packets from standard HCI commands, events or data sent or received from ESP32. Once "RX/TX Sniffer" feature is enabled on the ESP32 firmware, Baseband packets are directly forwarded to *`BTSnifferBREDR.py`* script which simply decodes sniffed packets and prints them via Scapy and/or dumps to Wireshark via live capture and to `logs` folder.
+The custom ESP32 BR/EDR Sniffer/Injector firmware communicates with the host system over a USB serial port and waits to receive custom commands or HCI commands. At startup, an HCI bridge is created to separate BrakTooth custom protocol from standard HCI commands sent or received from ESP32. Once the "RX/TX Sniffer" feature is enabled on the ESP32 firmware, Baseband packets are directly forwarded to *`BTSnifferBREDR.py`* script which simply decodes sniffed packets over the custom protocol and prints them via Scapy and/or dumps to Wireshark via live capture and to `logs` folder.
 
 ![arch.pdf](docs/arch.pdf.svg)
 
