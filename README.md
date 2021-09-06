@@ -1,6 +1,8 @@
 # *BrakTooth* ESP32 BR/EDR Active Sniffer/Injector
 
-This is a reverse engineered <u>**active**</u> BR/EDR sniffer and ESP32 patching framework (soon to be open-sourced), which can be used to explore the Bluetooth (BT) BR/EDR interaction between ESP32 controller and a remote target. Differently than <u>**passive**</u> sniffers, which do not interact with the BT network (piconet), the **<u>active</u>** sniffer connects itself to the remote BT device (BR/EDR target) and allows testing of BT protocol down to the Baseband layer in a quick and simple way by using a third-party BT host stack such as **[blue-kitchen](https://github.com/bluekitchen/btstack)**.  The *BrakTooth* sniffer makes use of cheap boards such as ESP32-DOIT or ESP32-WROVER-KIT.
+This is a reverse engineered <u>**active**</u> BR/EDR sniffer and ESP32 patching framework (soon to be open-sourced), which can be used to explore the Bluetooth (BT) BR/EDR interaction between ESP32 controller and a remote target. 
+
+Differently than <u>**passive**</u> sniffers, which do not interact with the BT network (piconet), the **<u>active</u>** sniffer connects itself to the remote BT device (BR/EDR target) and allows testing of BT protocol down to the Baseband layer in a quick and simple way by using a third-party BT host stack such as **[blue-kitchen](https://github.com/bluekitchen/btstack)**.  The *BrakTooth* sniffer makes use of cheap boards such as ESP32-DOIT or ESP32-WROVER-KIT.
 
 ### Simplified Setup Overview
 
@@ -52,8 +54,9 @@ Lastly, the `--bridge-only`  only creates the HCI pseudo terminal (/dev/pts/x) s
 ```bash
 ./BTSnifferBREDR.py --port=/dev/ttyUSB0 --target=E0:D4:E8:19:C7:69 --live-terminal --live-wireshark
 ```
-
-<img src="docs/mode_master.png" alt="mode_master" style="zoom: 67%;" />
+<p align="center">
+<img src="docs/mode_master.png" alt="mode_master" width="600" height="auto" />
+</p>
 
 ##### Example 2 - **<u>Wait</u>** for BT connections and start both Wireshark live capture and terminal output
 
@@ -67,9 +70,9 @@ Lastly, the `--bridge-only`  only creates the HCI pseudo terminal (/dev/pts/x) s
 ./BTSnifferBREDR.py --port=/dev/ttyUSB0 --bridge-only --live-terminal --live-wireshark
 ```
 
-<img src="docs/mode_bridge_only.png" alt="mode_bridge_only" style="zoom: 94%;" />
-
-
+<p align="center">
+<img src="docs/mode_bridge_only.png" alt="mode_bridge_only" width="600" height="auto" />
+</p>
 
 ### 3) Customising BT Host programs (Profiles)
 
