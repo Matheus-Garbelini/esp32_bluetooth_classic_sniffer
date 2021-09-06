@@ -1,2 +1,4 @@
 colorama
 pyserial
+click
+platformio

@@ -4,3 +4,23 @@ firmware/.pio/
 *__pycache__*
 
 dissectors/build/
+
+CMakeFiles/
+
+host_stack/blue-kitchen/test/
+
+host_stack/blue-kitchen/doc/
+
+logs/capture_bluetooth.pcapng
+
+runtime/install/
+
+hci_dump.pklg
+
+build/
+
+runtime/licenses/
+
+runtime/PYTHON.json
+
+runtime/success

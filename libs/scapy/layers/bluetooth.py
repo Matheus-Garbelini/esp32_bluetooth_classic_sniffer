@@ -17,7 +17,7 @@ import select
 from ctypes import sizeof
 
 from scapy.config import conf
-from scapy.data import DLT_BLUETOOTH_HCI_H4, DLT_BLUETOOTH_HCI_H4_WITH_PHDR, DLT_BLUETOOTH_ESPRESSIF
+from scapy.data import DLT_BLUETOOTH_HCI_H4, DLT_BLUETOOTH_HCI_H4_WITH_PHDR
 from scapy.packet import bind_layers, Packet
 from scapy.fields import ByteEnumField, ByteField, Field, FieldLenField, \
     FieldListField, FlagsField, BitEnumField, XIntField, IntField, LEShortEnumField, LEShortField, \
@@ -1172,7 +1172,8 @@ class BT_LMP(Packet):
 
 class LMP_features_req(Packet):
     name = "LMP_features_req"
-    fields_desc = [FlagsField("features", 0x8f7bffdbfecffebf, 64, _bluetooth_lmp_features)]
+    fields_desc = [FlagsField(
+        "features", 0x8f7bffdbfecffebf, 64, _bluetooth_lmp_features)]
 
     def post_dissect(self, s):
         # Truncate padding
@@ -1186,7 +1187,8 @@ class LMP_features_res(LMP_features_req):
 class LMP_version_req(Packet):
     name = "LMP_version_req"
     fields_desc = [
-        ByteEnumField("version", 8, _bluetooth_lmp_versnr),  # Version 4.2 by default
+        # Version 4.2 by default
+        ByteEnumField("version", 8, _bluetooth_lmp_versnr),
         LEShortField("company_id", 15),  # Broadcom
         LEShortField("subversion", 24841)
     ]
@@ -1249,7 +1251,8 @@ class LMP_name_res(Packet):
 
 class LMP_detach(Packet):
     name = "LMP_detach"
-    fields_desc = [ByteEnumField("error_code", 0x13, _bluetooth_lmp_error_code)]
+    fields_desc = [ByteEnumField(
+        "error_code", 0x13, _bluetooth_lmp_error_code)]
 
     def post_dissect(self, s):
         # Truncate padding
@@ -1466,7 +1469,8 @@ class LMP_set_AFH(Packet):
             0: "disabled",
             1: "enabled"
         }),
-        XStrFixedLenField("chM", b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\x7f', 10),
+        XStrFixedLenField(
+            "chM", b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\x7f', 10),
     ]
 
     def post_dissect(self, s):
@@ -1492,7 +1496,8 @@ class LMP_channel_classification_req(Packet):
 
 class LMP_channel_classification(Packet):
     name = "LMP_channel_classification"
-    fields_desc = [XStrFixedLenField("class", b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\x7f', 10)]
+    fields_desc = [XStrFixedLenField(
+        "class", b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\x7f', 10)]
 
     def post_dissect(self, s):
         # Truncate padding
@@ -1532,7 +1537,8 @@ class LMP_clkoffset_res(Packet):
 class LMP_sniff_req(Packet):
     name = "LMP_sniff_req"
     fields_desc = [
-        FlagsField("timectr", 0x02, 8, ["change", "init", "accwin", "un3", "un4", "un5", "un6", "un7"]),
+        FlagsField("timectr", 0x02, 8, [
+                   "change", "init", "accwin", "un3", "un4", "un5", "un6", "un7"]),
         LEShortField("dsniff", 0),
         LEShortField("tsniff", 0x31e),
         LEShortField("sniff_attempt", 4),
@@ -1806,44 +1812,35 @@ class LMP_ping_res(Packet):
         return ""
 
 
-class HCI_Diag_Hdr(Packet):
-    name = "HCI Diag header"
-    fields_desc = [ByteEnumField("diag_type", 0, _bluetooth_diag_types),
-                   IntField("clock", 0),
-                   XIntField("maclow", None),
-                   ConditionalField(StrFixedLenField("padding", b"\x00\x00\x00", 3),
-                                    lambda pkt: pkt.diag_type == 1),
-                   BitField("len", None, 5),
-                   BitEnumField("flow", 0, 1, {0: False, 1: True}),
-                   BitEnumField("llid", 0, 2, {0x00: 'undefined',
-                                               0x01: 'Continuation fragment of an L2CAP message',
-                                               0x02: 'Start of an L2CAP message or no fragmentation',
-                                               0x03: 'LMP'}),
-                   ]
+class ESP32_BREDR(Packet):
+    name = "ESP32_BREDR"
+    fields_desc = [
+        
+        LEIntField("clk", 0),
+        ByteField("channel", 0),
 
-    def post_build(self, p, pay):
-
-        if self.len is None:
-            p_len = p[9] & 0b00000111  # Clear length field
-            p_len |= len(pay) << 3
-            p = p[:9] + bytes(chr(p_len), encoding='utf-8') + pay
-        else:
-            p += pay
-
-        return p
+        BitField("is_eir", 0, 1),
+        BitField("rx_enc", 0, 1),
+        BitField("tx_enc", 0, 1),
+        BitField("rfu", 0, 3),
+        BitEnumField("role", 0, 1, {0x00: 'Master', 0x01: 'Slave'}),
+        BitField("is_edr", 0, 1),
+    ]
 
 class BT_Baseband(Packet):
     name = "BT_Baseband"
     fields_desc = [
-        
+
         BitField("flow", 0, 1),
-        BitEnumField("type", 0, 4, {0x2: "FHS", 0x03: "DM1", 0x04: "DH1/2-DH1", 0x08: "DV/3-DH1"}),
+        BitEnumField("type", 0, 4, {0x00: 'NULL', 0x01: 'POLL',
+                     0x2: "FHS", 0x03: "DM1", 0x04: "DH1/2-DH1", 0x08: "DV/3-DH1"}),
         BitField("lt_addr", 0, 3),
-        
+
         # BitField("lt_addr", 0, 3),
-        # BitEnumField("type", 0, 4, {0x2: "FHS", 0x03: "DM1", 0x04: "DH1/2-DH1", 0x08: "DV/3-DH1"}),
+        # BitEnumField("type", 0, 4, {0x00: 'NULL', 0x01: 'POLL',
+        #              0x2: "FHS", 0x03: "DM1", 0x04: "DH1/2-DH1", 0x08: "DV/3-DH1"}),
         # BitField("flow", 0, 1),
-        
+
         BitField("arqn", 0, 1),
         BitField("seqn", 0, 1),
         BitField("hec", 0, 6),
@@ -1854,6 +1851,7 @@ class BT_Baseband(Packet):
             return BT_ACL_Hdr
         else:
             return Packet.guess_payload_class(self, payload)
+
 
 class BT_ACL_Hdr(Packet):
     name = "BT ACL Header"
@@ -2213,20 +2211,14 @@ bind_layers(HCI_PHDR_Hdr, HCI_Hdr)
 bind_layers(HCI_Hdr, HCI_Command_Hdr, type=1)
 bind_layers(HCI_Hdr, HCI_ACL_Hdr, type=2)
 bind_layers(HCI_Hdr, HCI_Event_Hdr, type=4)
-bind_layers(HCI_Hdr, HCI_Diag_Hdr, type=7)
 bind_layers(HCI_Hdr, BT_ACL_Hdr, type=8)
+bind_layers(HCI_Hdr, ESP32_BREDR, type=9)
 bind_layers(HCI_Hdr, conf.raw_layer, )
 
 conf.l2types.register(DLT_BLUETOOTH_HCI_H4, HCI_Hdr)
 conf.l2types.register(DLT_BLUETOOTH_HCI_H4_WITH_PHDR, HCI_PHDR_Hdr)
-conf.l2types.register(DLT_BLUETOOTH_ESPRESSIF, BT_ACL_Hdr)
 
-
-
-bind_layers(HCI_Diag_Hdr, BT_LMP, llid=0x03)
-bind_layers(HCI_Diag_Hdr, L2CAP_Hdr, llid=0x02)
-
-
+bind_layers(ESP32_BREDR, BT_Baseband)
 bind_layers(BT_Baseband, BT_ACL_Hdr, type=0x08)
 bind_layers(BT_Baseband, BT_ACL_Hdr, type=0x04)
 bind_layers(BT_Baseband, BT_ACL_Hdr, type=0x03)
