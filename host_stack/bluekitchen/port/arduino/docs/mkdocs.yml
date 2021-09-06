@@ -1,0 +1,9 @@
+site_name: BTstack Arduino Manual
+site_dir: btstack-arduino
+use_directory_urls: false
+nav:
+- Welcome: index.md
+- Tutorial: tutorial.md
+- Example: examples/generated.md
+#- [appendix/apis.md, API]
+theme: readthedocs

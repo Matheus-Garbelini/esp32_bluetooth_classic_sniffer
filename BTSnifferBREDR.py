@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!./runtime/install/bin/python3
 
 import os
 import sys
@@ -9,13 +9,14 @@ import colorama
 import subprocess
 import random
 import signal
+import click
 from threading import Thread
 from time import sleep
 from colorama import Fore, init
 
 sys.path.insert(0, os.getcwd() + '/libs')
 
-from scapy.layers.bluetooth import HCI_Hdr, BT_ACL_Hdr, HCI_PHDR_Hdr, BT_LMP, BT_Baseband
+from scapy.layers.bluetooth import HCI_Hdr, ESP32_BREDR, BT_Baseband, BT_ACL_Hdr, BT_LMP, HCI_PHDR_Hdr
 from scapy.utils import wrpcap, PcapWriter
 from ESP32BTDriver import ESP32BTDriver
 
@@ -26,45 +27,56 @@ init(autoreset=True)
 class SnifferBREDR:
     TAG = 'Sniffer'
     working_dir = None
-    packets = []
     wireshark_process = None
-    fifo_file = '/tmp/fifocap.fifo'
-    pcap_filename = 'capture_bluetooth.pcap'
+    pcap_fifo_filename = '/tmp/fifocap.fifo'
+    pcap_filename = 'logs/capture_bluetooth.pcapng'
     save_pcap = False
     pcap_fifo_writer = None
     pcap_writer = None
+
+    show_summary = True
+    start_wireshark = False
     wireshark_started = False
+    host_bdaddr = None
 
     driver = None  # type: ESP32BTDriver
-    run_driver = True
+    driver_run = False
     serial_port = None
     serial_baud = None
     serial_thread = None
     bridge_hci = True
     bt_program = None
     bt_program_thread = None
-    bt_program_run = True
+    bt_program_run = False
     bt_program_process = None
+    # program parameters
+    bt_bdaddr = None
 
     # BT Vars
     tx_packets = 0
     rx_packets = 0
-    remote_address = b'a8:96:75:25:c2:ac'
 
     # Constructor
     def __init__(self,
                  serial_port=None,
-                 serial_baud=4000000,
+                 serial_baud=921600,
+                 show_summary=True,
                  start_wireshark=False,
                  save_pcap=True,
                  pcap_filename=None,
                  bridge_hci=True,
-                 bt_program=None):
+                 bt_program=None,
+                 target_bdaddress=None,
+                 host_bdaddr='E0:D4:E8:19:C7:68'):
 
+        self.show_summary = show_summary
+        self.start_wireshark = start_wireshark
         self.serial_port = serial_port
         self.serial_baud = serial_baud
         self.save_pcap = save_pcap
         self.bridge_hci = bridge_hci
+        self.bt_bdaddr = target_bdaddress
+        self.host_bdaddr = host_bdaddr
 
         if pcap_filename:
             self.pcap_filename = pcap_filename
@@ -72,17 +84,18 @@ class SnifferBREDR:
         if bt_program:
             self.bt_program = bt_program
 
-        if start_wireshark:
+        if self.start_wireshark:
             try:
-                os.remove(self.fifo_file)
+                os.remove(self.pcap_fifo_filename)
             except:
                 pass
-            os.mkfifo(self.fifo_file)
+            os.mkfifo(self.pcap_fifo_filename)
             try:
                 self.l('[!] Starting Wireshark...')
                 self.wireshark_process = subprocess.Popen(
-                    ['wireshark', '-k', '-i', self.fifo_file])
-                self.pcap_fifo_writer = PcapWriter(self.fifo_file, sync=True)
+                    ['wireshark', '-k', '-i', self.pcap_fifo_filename])
+                self.pcap_fifo_writer = PcapWriter(
+                    self.pcap_fifo_filename, sync=True)
                 self.wireshark_started = True
             except Exception as e:
                 self.error('Wireshark could not start: ' + str(e))
@@ -95,10 +108,8 @@ class SnifferBREDR:
     def signal_handler(self, signal, frame):
         self.error('You pressed Ctrl+C - or killed me with -2')
         exit(0)
-        # sys.exit(0)
 
     # Logs
-
     def l(self, msg):
         print(Fore.YELLOW + '[' + self.TAG + '] ' + msg)
 
@@ -107,26 +118,25 @@ class SnifferBREDR:
 
     # Main functions
     def start(self):
-
         if self.bridge_hci or self.bt_program is None:
             self.driver = ESP32BTDriver(self.serial_port, self.serial_baud)
             self.driver.enable_sniffing(1)
             self.driver.disable_poll_null(1)
+            self.driver.set_bdaddr(self.host_bdaddr)
+
             print(Fore.GREEN + 'ESP32BT driver started on ' +
                   self.serial_port + '@' + str(self.serial_baud))
 
+            self.driver_run = True
             self.serial_thread = Thread(target=self.uart_rx_handler)
             self.serial_thread.daemon = True
             self.serial_thread.start()
 
         if self.bt_program is not None:
+            self.bt_program_run = True
             self.bt_program_thread = Thread(target=self.bt_program_handler)
             self.bt_program_thread.daemon = True
             self.bt_program_thread.start()
-
-    @staticmethod
-    def skip_slashes(summary_text, idx):
-        return '/'.join(summary_text.split('/')[idx:])
 
     def bt_program_handler(self):
         if self.bridge_hci:
@@ -134,12 +144,9 @@ class SnifferBREDR:
         else:
             p_name = self.serial_port
 
-        print('Starting ' + self.bt_program + ' -u ' + p_name)
-        process = subprocess.Popen([self.bt_program, '-u', p_name],
-                                   #    stdin=subprocess.PIPE,
-                                   #    stdout=subprocess.PIPE,
-                                   #    stderr=subprocess.PIPE
-                                   )
+        p_args = [self.bt_program, '-u', p_name, '-a', str(self.bt_bdaddr)]
+        print('Starting ' + str(p_args))
+        process = subprocess.Popen(p_args)
         self.bt_program_process = process
 
         while self.bt_program_run:
@@ -149,42 +156,31 @@ class SnifferBREDR:
         return rc
 
     def uart_rx_handler(self):
-
-        while self.run_driver:
-            # Receive packet from the NRF52 Dongle
-            data = self.driver.raw_receive()
-            if data:
+        while self.driver_run:
+            # Receive packet from the ESP32 Board
+            data = self.driver.receive()
+            if data is not None:
                 # Decode Bluetooth Low Energy Data
-                pkt = BT_Baseband(data)
+                pkt = ESP32_BREDR(data)
                 if pkt:
-                    summary = pkt.summary()
+                    summary = pkt[BT_Baseband].summary()
                     direction = self.driver.direction
                     if direction == 1:
-                        # print('R:' + summary)
-                        self.log_rx(summary)
+                        if self.show_summary:
+                            self.log_rx(summary)
                         self.rx_packets += 1
                     elif direction == 0:
-
-                        if BT_LMP in pkt:
-                            # print('T:' + summary)
-                            pkt = BT_ACL_Hdr(data)
-
-                        self.log_tx(summary)
+                        if self.show_summary:
+                            self.log_tx(summary)
                         self.tx_packets += 1
 
-                # self.update_summary(self.tx_packets, self.rx_packets)
-
-                # Pipe/Save pcap
+                # Pipe / Save pcap
                 hci_pkt = HCI_PHDR_Hdr(
-                    direction=direction) / HCI_Hdr(type=8) / pkt
+                    direction=direction) / HCI_Hdr() / pkt
                 if self.wireshark_started is True:
                     self.pcap_fifo_writer.write(hci_pkt)
                 if self.save_pcap is True:
                     self.pcap_writer.write(hci_pkt)
-
-    @staticmethod
-    def decode_address(addr):
-        return bytes.fromhex(''.join(addr.split(':')))
 
     def log_tx(self, log_message):
         print(Fore.CYAN + 'TX --> ' + log_message)
@@ -192,27 +188,78 @@ class SnifferBREDR:
     def log_rx(self, log_message):
         print(Fore.GREEN + 'RX <-- ' + log_message)
 
-    def update_summary(self, tx_pkts, rx_pkts):
-        self.log_summary('TX packets: ' + str(tx_pkts))
-        self.log_summary('RX Packets: ' + str(rx_pkts))
-        self.log_summary('BT Clock: ' + str(self.driver.event_counter))
+
+# Defaults
+serial_port = '/dev/ttyUSB0'
+serial_baud = 921600
 
 
-Sniffer = SnifferBREDR(serial_port='/dev/ttyUSB1',
-                       serial_baud=4000000,
-                       start_wireshark=False,
-                       bt_program='./bin/spp_counter',
-                       )
-Sniffer.start()
+@click.command()
+@click.option('--port', default=serial_port,
+              help='Serial port name (/dev/ttyUSBx for Linux)')
+@click.option('--host', default='E0:D4:E8:19:C7:68', help='BDAddress of local host (default: E0:D4:E8:19:C7:68)')
+@click.option('--target', help='BDAddress of remote target (ex: a8:96:75:25:c2:ac)')
+@click.option('--live-wireshark', is_flag=True,
+              help='Opens Wireshark live session')
+@click.option('--live-terminal', is_flag=True,
+              help='Show a summary of each packet on terminal')
+@click.option('--bridge-only', is_flag=True,
+              help='Starts the HCI bridge without connecting any BT Host stack')
+def sniffer(port, host, target, live_wireshark, live_terminal, bridge_only):
 
-try:
-    while True:
-        sleep(1)
+    bt_program = None
+    host_bdaddress = None
+    target_bdaddress = None
+    bd_role_master = False
 
-except KeyboardInterrupt:
-    if Sniffer.save_pcap:
-        print(Fore.GREEN + 'Capture saved on capture_bluetooth.pcap')
+    if target:
+        # Check BDAddress format
+        if ':' in target and (len(target.split(':')) == 6) and (len(target) == 17):
+            target_bdaddress = target.lower()
+        else:
+            raise ValueError("Incorrect BDAddress format")
 
-    if Sniffer.bt_program_process is not None:
-        Sniffer.bt_program_process.kill()
-        print(Fore.YELLOW + 'BT Program finished')
+    if host:
+        # Check BDAddress format
+        if ':' in host and (len(host.split(':')) == 6) and (len(host) == 17):
+            host_bdaddress = host.lower()
+        else:
+            raise ValueError("Incorrect BDAddress format")
+
+    if (live_terminal or live_wireshark) and not bridge_only:
+        bd_role_master = True if target else False
+        bt_program = (
+            './host_stack/sdp_rfcomm_query' if bd_role_master else './host_stack/spp_counter')
+    else:
+        print(Fore.YELLOW + '[!] Bridge will start without BT host stack')
+
+    print('Using options:\n\
+        Serial Port: %s\n\
+        Serial Baud: %d\n\
+        BT Host Program: %s\n\
+        Host BDAddress: %s\n\
+        Target BDAddress: %s' % (port, serial_baud, bt_program, host_bdaddress, target_bdaddress))
+
+    Sniffer = SnifferBREDR(serial_port=port,
+                           serial_baud=serial_baud,
+                           show_summary=live_terminal,
+                           start_wireshark=live_wireshark,
+                           bt_program=bt_program,
+                           target_bdaddress=target)
+    Sniffer.start()
+
+    try:
+        while True:
+            sleep(1)
+
+    except KeyboardInterrupt:
+        if Sniffer.save_pcap:
+            print(Fore.GREEN + 'Capture saved on logs/capture_bluetooth.pcapng')
+
+        if Sniffer.bt_program_process is not None:
+            Sniffer.bt_program_process.kill()
+            print(Fore.YELLOW + 'BT Program finished')
+
+
+if __name__ == '__main__':
+    sniffer()

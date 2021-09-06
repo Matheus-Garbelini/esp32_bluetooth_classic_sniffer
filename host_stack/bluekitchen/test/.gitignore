@@ -1,0 +1,8 @@
+*.gcda
+*.gcno
+coverage*.info
+coverage
+coverage-html
+coverage-bat
+coverage-unit
+coverage-pts

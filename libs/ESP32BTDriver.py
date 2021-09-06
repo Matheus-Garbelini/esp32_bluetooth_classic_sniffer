@@ -1,5 +1,3 @@
-from binascii import hexlify
-from colorama import Fore
 import binascii
 import os
 import sys
@@ -11,11 +9,15 @@ import time
 import ctypes
 import serial.tools.list_ports
 from threading import Thread
+from binascii import hexlify, unhexlify
+from colorama import Fore
+from time import sleep
+from firmware import reset_firmware
 
 
 class ConnectionStatus(ctypes.LittleEndianStructure):
     _fields_ = [
-        ("clock", ctypes.c_uint32, 8*4),
+        ("clock", ctypes.c_uint32, 8 * 4),
         ("channel", ctypes.c_uint8, 8),
         ("ptt", ctypes.c_uint8, 1),
         ("role", ctypes.c_uint8, 1),
@@ -42,6 +44,7 @@ ESP32_CMD_LOG = b'\x7F'
 ESP32_CMD_RESET = b'\x86'
 ESP32_CMD_VERSION = b'\xEE'
 ESP32_CMD_ENABLE_LMP_SNIFFING = b'\x81'
+ESP32_CMD_SET_BDADDR = b'\x87'
 ESP32_CMD_DISABLE_POLL_NULL = b'\x89'
 
 # HCI Codes to bridge
@@ -55,13 +58,8 @@ H4_EVT_HW_ERROR = b'\x10'
 
 # Driver class
 class ESP32BTDriver:
-    n_debug = False
-    n_log = False
-    logs_pcap = False
+
     event_counter = 0
-    pcap_filename = None
-    pcap_tx_handover = False
-    sent_pkt = None
     direction = None
     version = None
     status = None  # type: ConnectionStatus
@@ -69,20 +67,27 @@ class ESP32BTDriver:
     serial_bridge = None
     serial_bridge_name = None
     serial_hci_thread = None
+    serial_baudrate = 921600
+    serial_portname = None
 
     # Constructor ------------------------------------
-    def __init__(self, port_name=None, baudrate=115200, debug=False, logs=True, logs_pcap=False, pcap_filename=None):
+    def __init__(self, port_name=None, baudrate=921600, reset_board=True,
+                 debug=False):
+
+        self.serial_portname = port_name
+        self.serial_baudrate = baudrate
+
+        if reset_board:
+            # Reset ESP32 board to endure clean session
+            self.reset_firmware()
 
         self.serial = serial.Serial(
             port_name, baudrate, rtscts=0, xonxoff=0, timeout=1)
-        self.logs_pcap = logs_pcap
-        self.n_log = logs
-        self.n_debug = debug
 
         self.get_version()
 
-        if self.n_debug:
-            print('ESP32: Instance started')
+        os.system("setserial %s low_latency >/dev/null" %
+                  (self.serial_portname))
 
         master, slave = pty.openpty()
         self.serial_bridge_name = os.ttyname(slave)
@@ -95,7 +100,38 @@ class ESP32BTDriver:
         self.serial_hci_thread.start()
 
     def close(self):
-        print('NRF52 Dongle closed')
+        print('ESP32 Driver closed')
+
+    def reset_firmware(self, wait_reset=True, soft_reset=False):
+
+        if soft_reset is False:
+            try:
+                import serial
+            except:
+                print("[ERROR] pyserial module not found, installing now via pip...")
+                os.system(sys.executable +
+                          ' -m pip install pyserial --upgrade')
+                os.sync()
+
+            # We should have pyserial installed here
+            import serial
+
+            ser = serial.Serial(self.serial_portname, self.serial_baudrate,
+                                rtscts=False, dsrdtr=False)
+            ser.rts = True
+            ser.dtr = True
+            ser.dtr = False
+            ser.dtr = True
+            ser.close()
+            ser = None
+            print('[!] Reset Done! EN pin toggled HIGH->LOW->HIGH')
+
+        else:
+            self.serial.write(ESP32_CMD_RESET + bytearray([0x86, 0xAA]))
+
+        if wait_reset:
+            print('[!] Waiting 0.8s...')
+            sleep(0.8)
 
     # UART functions ---------------------------
 
@@ -112,19 +148,20 @@ class ESP32BTDriver:
     def enable_sniffing(self, val):
         self.serial.write(ESP32_CMD_ENABLE_LMP_SNIFFING + bytearray([val]))
 
-    def reset_firmware(self, val):
-        self.serial.write(ESP32_CMD_RESET + bytearray([0x86, 0xAA]))
-
     def disable_poll_null(self, val):
         self.serial.write(ESP32_CMD_DISABLE_POLL_NULL + bytearray([val]))
         self.serial.read(1)
+
+    def set_bdaddr(self, value):
+        addr = unhexlify(''.join(value.split(':')[::-1]))
+        self.serial.write(ESP32_CMD_SET_BDADDR + addr)
 
     def hci_handler(self):
         while True:
             c = os.read(self.serial_bridge, 1)
             self.serial.write(c)
 
-    def raw_receive(self):
+    def receive(self):
         cmd = self.serial.read(1)
 
         if cmd == H4_EVT:
@@ -136,13 +173,14 @@ class ESP32BTDriver:
             opcode = self.serial.read(2)
             length = self.serial.read(2)
             payload = self.serial.read(length[0] | (length[1] << 8))
-            print(payload)
             os.write(self.serial_bridge, H4_ACL + opcode + length + payload)
-        elif cmd == H4_CMD:
+        elif cmd == H4_CMD:  # Should not happen
             opcode = self.serial.read(2)
             length = self.serial.read(1)
-            payload = self.serial.read(ord(length))
-            os.write(self.serial_bridge, H4_CMD + opcode + length + payload)
+            if len(length):
+                payload = self.serial.read(ord(length))
+                os.write(self.serial_bridge, H4_CMD +
+                         opcode + length + payload)
 
         # Receive BT packets
         elif cmd == ESP32_CMD_DATA_RX or cmd == ESP32_CMD_DATA_TX:
@@ -153,12 +191,7 @@ class ESP32BTDriver:
             # Check data checksum
             if (checksum and (sum(data) & 0xFF) == ord(checksum)):
                 self.status = ConnectionStatus(*data[0:6])
-
-                if cmd == ESP32_CMD_DATA_RX:
-                    self.direction = 1
-                elif cmd == ESP32_CMD_DATA_TX:
-                    self.direction = 0
-
-                return data[6:]
+                self.direction = (1 if cmd == ESP32_CMD_DATA_RX else 0)
+                return data
 
         return None
