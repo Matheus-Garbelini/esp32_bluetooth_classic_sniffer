@@ -2,9 +2,6 @@
 
 This is a reverse engineered <u>**active**</u> BR/EDR sniffer and ESP32 patching framework (soon to be open-sourced), which can be used to explore the Bluetooth (BT) BR/EDR interaction between ESP32 controller and a remote target. Differently than <u>**passive**</u> sniffers, which do not interact with the BT network (piconet), the **<u>active</u>** sniffer connects itself to the remote BT device (BR/EDR target) and allows testing of BT protocol down to the Baseband layer in a quick and simple way by using a third-party BT host stack such as **[blue-kitchen](https://github.com/bluekitchen/btstack)**.  The *BrakTooth* sniffer makes use of cheap boards such as ESP32-DOIT or ESP32-WROVER-KIT.
 
-
-The dissection of Baseband packets extends the [*InternalBlue* Broadcom Wireshark Dissector](https://github.com/seemoo-lab/h4bcm_wireshark_dissector). Specifically, we have extended the h4bcm Wireshark plugin to support a few more BT layers and our custom ESP32 metadata header. Thanks [@jiska2342](https://github.com/seemoo-lab/h4bcm_wireshark_dissector/commits?author=jiska2342).
-
 ### Simplified Setup Overview
 
 ![poc_setup](docs/setup.svg)
@@ -114,6 +111,10 @@ The custom ESP32 BR/EDR Sniffer/Injector firmware communicates with the host sys
 
 
 ### Acknowledgements
+
+The dissection of Baseband packets extends the [*InternalBlue* Broadcom Wireshark Dissector](https://github.com/seemoo-lab/h4bcm_wireshark_dissector). 
+Specifically, the dissection extended the h4bcm Wireshark plugin to support a few more BT layers and our custom ESP32 metadata header. 
+Thanks [@jiska2342](https://github.com/seemoo-lab/h4bcm_wireshark_dissector/commits?author=jiska2342).
 
 Thanks to all the following open-source projects:
 
