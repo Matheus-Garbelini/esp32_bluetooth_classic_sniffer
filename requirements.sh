@@ -5,8 +5,8 @@ sudo apt install cmake clang software-properties-common -y
 
 
 echo -e "\n\nInstalling latest stable wireshark"
-sudo add-apt-repository --yes ppa:wireshark-dev/stable
+sudo add-apt-repository --y ppa:wireshark-dev/stable
 sudo apt-get update
-sudo apt install wireshark -y
+sudo apt install wireshark-dev -y
 
 echo "Done! Run build.sh to build project"
