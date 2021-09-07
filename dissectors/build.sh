@@ -2,6 +2,7 @@
 
 PLUGIN_VERSION=2.0.0
 WIRESHARK_INCLUDES=$(pkg-config wireshark --cflags-only-I)
+WIRESHARK_PLUGINS_FOLDER="/home/$USER/.local/lib/wireshark/plugins/3.4/epan/"
 
 mkdir -p build
 
@@ -38,5 +39,6 @@ clang -DG_DISABLE_DEPRECATED -DG_DISABLE_SINGLE_INCLUDES -DHAVE_PLUGINS -DPLUGIN
 echo "Building h4bcm.so"
 clang --std=gnu11 -fPIC -w -O3 -shared -o h4bcm.so build/packet-btbrlmp.c.o build/packet-h4bcm.c.o build/plugin.c.o -lwireshark -lwiretap -lwsutil
 
-echo "Copying h4bcm.so to /usr/local/lib/wireshark/plugins/3.4/epan/"
-sudo cp h4bcm.so /usr/local/lib/wireshark/plugins/3.4/epan/ 
+mkdir -p $WIRESHARK_PLUGINS_FOLDER
+echo "Copying h4bcm.so to $WIRESHARK_PLUGINS_FOLDER"
+sudo cp h4bcm.so $WIRESHARK_PLUGINS_FOLDER
