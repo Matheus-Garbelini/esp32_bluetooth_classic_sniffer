@@ -17,7 +17,7 @@ system_name = platform.system()
 is_linux = system_name == 'Linux' or system_name == 'Darwin'
 firmware_path = sys.path[0] / Path('firmware')
 pio_build_path = Path('.pio/build/esp32doit-devkit-v1-serial/')
-
+runtime_path = Path(os.path.dirname(sys.executable))
 
 def has_pio():
     if is_linux:
@@ -119,6 +119,8 @@ if __name__ == "__main__":
     os.chdir(firmware_path)
     enable_build = is_source_project()
     home_path = str(Path.home())
+    # Add runtime bin to path
+    os.environ['PATH'] = str(runtime_path) + os.pathsep + os.environ['PATH']
 
     if is_linux:
         # Fix locale
