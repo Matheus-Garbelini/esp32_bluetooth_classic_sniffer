@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-echo -e "\nInstalling cmake, clang and software-properties-common"
-sudo apt install cmake clang software-properties-common -y
+echo -e "\nInstalling cmake, clang, zstd and software-properties-common"
+sudo apt install cmake clang zstd software-properties-common -y
 
 
 echo -e "\n\nInstalling latest stable wireshark"
