@@ -1,8 +1,10 @@
 # *BrakTooth* ESP32 BR/EDR Active Sniffer/Injector
 
+> Simple "Monitor mode" for Bluetooth Classic. Sniff or inject BR/EDR Baseband packets in BT connections. 
+
 This is a reverse engineered <u>**active**</u> BR/EDR sniffer and ESP32 patching framework (soon to be open-sourced), which can be used to explore the Bluetooth (BT) BR/EDR interaction between ESP32 controller and a remote target. 
 
-Differently than <u>**passive**</u> sniffers, which do not interact with the BT network (piconet), the **<u>active</u>** sniffer connects itself to the remote BT device (BR/EDR target) and allows testing of BT protocol down to the Baseband layer in a quick and simple way by using a third-party BT host stack such as **[blue-kitchen](https://github.com/bluekitchen/btstack)**.  The *BrakTooth* sniffer makes use of cheap boards such as ESP32-DOIT or ESP32-WROVER-KIT.
+Differently than <u>**passive**</u> sniffers, which do not interact with the BT network (piconet), the **<u>active</u>** sniffer connects itself to the remote BT device (BR/EDR target) and allows testing the BT protocol down to the Baseband layer while guided by a BT host stack such as **[blue-kitchen](https://github.com/bluekitchen/btstack)**. The *BrakTooth* sniffer supports cheap boards such as [ESP32-DOIT](https://www.aliexpress.com/item/1005001757645011.html?spm=a2g0o.productlist.0.0.364151a11nkQYT&algo_pvid=d71a7474-8721-44b8-ac22-2e7de1ebedcb&algo_exp_id=d71a7474-8721-44b8-ac22-2e7de1ebedcb-0&pdp_ext_f=%7B%22sku_id%22%3A%2212000017777037101%22%7D) ($4) or [ESP32-DevKitC](https://www.mouser.com/ProductDetail/Espressif-Systems/ESP32-DevKitC-32U?qs=%252BEew9%252B0nqrCEVvpkdH%2FG5Q%3D%3D) ($10).
 
 ### Simplified Setup Overview
 
@@ -12,15 +14,7 @@ Differently than <u>**passive**</u> sniffers, which do not interact with the BT 
 
 ### 1) Installation
 
-###### a. Flash custom firmware to ESP32
-
-Before starting to use *BrakTooth* Sniffer, you need to upload a custom firmware to your ESP32 board:
-
-```bash
-./firmware.py flash /dev/ttyUSB0 # Change ttyUSB0 to match your port name
-```
-
-###### b. Install Linux requirements (Ubuntu 18.04 / 20.04)
+###### A. Install Linux requirements (Ubuntu 18.04 / 20.04)
 
 ```bash
 git clone https://github.com/Matheus-Garbelini/esp32_bluetooth_classic_sniffer
@@ -29,7 +23,13 @@ cd esp32_bluetooth_classic_sniffer
 ./build.sh 		  # Build BT Host programs and Wireshark h4bcm dissector
 ```
 
+###### B. Flash custom firmware to ESP32
 
+Before starting to use *BrakTooth* Sniffer, you need to upload a custom firmware to your ESP32 board:
+
+```bash
+./firmware.py flash /dev/ttyUSB0 # Change ttyUSB0 to match your port name
+```
 
 ### 2) Usage Instructions
 
@@ -85,17 +85,20 @@ You can modify or add BT profiles to the current programs by following the offic
 
 
 
-### General Architecture
+### Software Architecture of BrakTooth Sniffer
+
+<p align="center">
+<img src="docs/arch.pdf.svg" alt="arch" width="800px" height="auto" />
+</p>
 
 The custom ESP32 BR/EDR Sniffer/Injector firmware communicates with the host system over a USB serial port and waits to receive custom commands or HCI commands. At startup, an HCI bridge is created to separate BrakTooth custom protocol from standard HCI commands sent or received from ESP32. Once the "RX/TX Sniffer" feature is enabled on the ESP32 firmware, Baseband packets are directly forwarded to *`BTSnifferBREDR.py`* script which simply decodes sniffed packets over the custom protocol and prints them via Scapy and/or dumps to Wireshark via live capture and to `logs` folder.
-
-![arch.pdf](docs/arch.pdf.svg)
-
 
 
 ### Features Overview
 
-![firmware_design](docs/firmware_design.pdf.svg)
+<p align="center">
+<img src="docs/firmware_design.pdf.svg" alt="firmware_design" width="600px" height="auto" />
+</p>
 
 * **RX/TX Sniffer:** Dumps Baseband packets and forwards them to the host. Supported packets: 
   * Baseband Header
@@ -104,9 +107,12 @@ The custom ESP32 BR/EDR Sniffer/Injector firmware communicates with the host sys
   * EIR (no dissection for now)
   * ACL Header
   * LMP
-* **TX Interception:** This allows the host PC to modify TX packets in real-time before over-the-air transmission from
-  ESP32. It requires however, an ESP32 board with high-speed USB such as [ESP-PROG](https://docs.espressif.com/projects/espressif-esp-iot-solution/en/latest/hw-reference/ESP-Prog_guide.html) or [ESP-WROVER-KIT](https://www.espressif.com/en/products/hardware/esp-wrover-kit/overview). Both of them have a [FTD2232H](https://ftdichip.com/products/ft2232hq/) USB to UART controller, which allows reduced USB pooling latency of *125us*. **(disabled for now, sorry)**.
-* **TX Injector:** This allows the host to inject BR/EDR packets immediately after the BT paging procedure and on every transmission slot (i.e. every 1.25ms) subjected to waits if there is something in ESP32 internal LMP queue. **(disabled for now, sorry)**.
+* **TX Interception:**
+  This allows the host PC to modify TX packets in real-time before over-the-air transmission from
+  ESP32. It requires however, an ESP32 board with high-speed USB such as [ESP-PROG](https://docs.espressif.com/projects/espressif-esp-iot-solution/en/latest/hw-reference/ESP-Prog_guide.html) or [ESP-WROVER-KIT](https://www.espressif.com/en/products/hardware/esp-wrover-kit/overview). Both of them have a [FTD2232H](https://ftdichip.com/products/ft2232hq/) USB to UART controller, which allows reduced USB pooling latency of *125us*. 
+  **(disabled for now, sorry)**.
+* **TX Injector:** This allows the host to inject BR/EDR packets immediately after the BT paging procedure and on every transmission slot (i.e. every 1.25ms) subjected to waits if there is something in ESP32 internal LMP queue.
+  **(disabled for now, sorry)**.
 * **RX/TX Bypass:** Effectively "*blinds*" ESP32 BT stack from receiving or transmitting LMP packets after the paging procedure. One can use this to construct a standalone LMP state machine on the host and with Scapy :slightly_smiling_face:.​ This feature could enable something similar to what has been done in [SweynTooth nRF52 dongle](https://github.com/Matheus-Garbelini/sweyntooth_bluetooth_low_energy_attacks), but for BR/EDR.
 * **ROM Patcher:** Installs **ROM** hooks from inside the firmware.
 * **HCI IN/OUT:** Standard communication interface with the BT Host stack. A third-party stack such as [bluekitchen](https://github.com/bluekitchen/btstack).
@@ -126,4 +132,3 @@ Thanks to all the following open-source projects:
 * [InternalBlue Project](https://github.com/seemoo-lab/internalblue)
 * [Scapy Packet Manipulation Library](https://github.com/secdev/scapy)
 * [Wireshark Project](https://gitlab.com/wireshark/wireshark)
-
