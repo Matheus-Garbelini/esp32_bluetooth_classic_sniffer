@@ -1,6 +1,6 @@
 # *BrakTooth* ESP32 BR/EDR Active Sniffer/Injector
 
-> Simple "Monitor mode" for Bluetooth Classic. Sniff or inject BR/EDR Baseband packets in BT connections. 
+> Simple "Monitor mode" for Bluetooth Classic. Sniff or inject BR/EDR Baseband packets in ESP32 BT connections. 
 
 This is a reverse engineered <u>**active**</u> BR/EDR sniffer and ESP32 patching framework (soon to be open-sourced), which can be used to explore the Bluetooth (BT) BR/EDR interaction between ESP32 controller and a remote target. 
 
