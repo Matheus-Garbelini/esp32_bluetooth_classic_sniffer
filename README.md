@@ -6,6 +6,25 @@ This is a reverse engineered <u>**active**</u> BR/EDR sniffer and ESP32 patching
 
 Differently than <u>**passive**</u> sniffers, which do not interact with the BT network (piconet), the **<u>active</u>** sniffer connects itself to the remote BT device (BR/EDR target) and allows testing the BT protocol down to the Baseband layer while guided by a BT host stack such as **[blue-kitchen](https://github.com/bluekitchen/btstack)**. The *BrakTooth* sniffer supports cheap boards such as [ESP32-DOIT](https://www.aliexpress.com/item/1005001757645011.html?spm=a2g0o.productlist.0.0.364151a11nkQYT&algo_pvid=d71a7474-8721-44b8-ac22-2e7de1ebedcb&algo_exp_id=d71a7474-8721-44b8-ac22-2e7de1ebedcb-0&pdp_ext_f=%7B%22sku_id%22%3A%2212000017777037101%22%7D) ($4) or [ESP32-DevKitC](https://www.mouser.com/ProductDetail/Espressif-Systems/ESP32-DevKitC-32U?qs=%252BEew9%252B0nqrCEVvpkdH%2FG5Q%3D%3D) ($10).
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<h5>Table of Contents</h5>
+
+- [Simplified Setup Overview](#simplified-setup-overview)
+- [1) Installation](#1-installation)
+    - [A. Install Linux requirements (Ubuntu 18.04 / 20.04)](#a-install-linux-requirements-ubuntu-1804--2004)
+    - [B. Flash custom firmware to ESP32](#b-flash-custom-firmware-to-esp32)
+- [2) Usage Instructions](#2-usage-instructions)
+    - [Example 1 - Connect to remote target (Master Role)](#example-1---connect-to-remote-target-master-role)
+    - [Example 2 - Wait for BT connection (Slave Role)](#example-2---wait-for-bt-connection-slave-role)
+    - [Example 3 - HCI Bridge Mode (connect with other BT Host stack)](#example-3---hci-bridge-mode-connect-with-other-bt-host-stack)
+- [3) Customising BT Host programs (Profiles)](#3-customising-bt-host-programs-profiles)
+- [Software Architecture of BrakTooth Sniffer](#software-architecture-of-braktooth-sniffer)
+- [Features Overview](#features-overview)
+- [Acknowledgements](#acknowledgements)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ### Simplified Setup Overview
 
 ![poc_setup](docs/setup.svg)
@@ -14,7 +33,7 @@ Differently than <u>**passive**</u> sniffers, which do not interact with the BT 
 
 ### 1) Installation
 
-###### A. Install Linux requirements (Ubuntu 18.04 / 20.04)
+##### A. Install Linux requirements (Ubuntu 18.04 / 20.04)
 
 ```bash
 git clone https://github.com/Matheus-Garbelini/esp32_bluetooth_classic_sniffer
@@ -23,7 +42,7 @@ cd esp32_bluetooth_classic_sniffer
 ./build.sh 		  # Build BT Host programs and Wireshark h4bcm dissector
 ```
 
-###### B. Flash custom firmware to ESP32
+##### B. Flash custom firmware to ESP32
 
 Before starting to use *BrakTooth* Sniffer, you need to upload a custom firmware to your ESP32 board:
 
@@ -49,7 +68,7 @@ You can start the sniffer in as either master or slave role. If you use add `--t
 
 Lastly, the `--bridge-only`  only creates the HCI pseudo terminal (/dev/pts/x) so ESP32 can operate as a standard HCI BT controller. You can use this feature to connect any other BT host stack to ESP32.
 
-##### Example 1 - **<u>Connect</u>** to remote target and start both Wireshark live capture and packets summary
+##### Example 1 - Connect to remote target (Master Role)
 
 ```bash
 ./BTSnifferBREDR.py --port=/dev/ttyUSB0 --target=E0:D4:E8:19:C7:69 --live-terminal --live-wireshark
@@ -58,13 +77,13 @@ Lastly, the `--bridge-only`  only creates the HCI pseudo terminal (/dev/pts/x) s
 <img src="docs/mode_master.png" alt="mode_master" width="600" height="auto" />
 </p>
 
-##### Example 2 - **<u>Wait</u>** for BT connections and start both Wireshark live capture and terminal output
+##### Example 2 - Wait for BT connection (Slave Role)
 
 ```bash
 ./BTSnifferBREDR.py --port=/dev/ttyUSB0 --live-terminal --live-wireshark
 ```
 
-##### Example 3 - Start sniffer in <u>HCI</u> mode (bridge-only) and start both Wireshark live capture and packets summary
+##### Example 3 - HCI Bridge Mode (connect with other BT Host stack)
 
 ```bash
 ./BTSnifferBREDR.py --port=/dev/ttyUSB0 --bridge-only --live-terminal --live-wireshark
