@@ -6,5 +6,6 @@
     ],
     "python.autoComplete.extraPaths": [
         "libs"
-    ]
+    ],
+    "python.pythonPath": "runtime/install/bin/python3"
 }

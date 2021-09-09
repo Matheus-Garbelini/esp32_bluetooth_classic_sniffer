@@ -75,7 +75,7 @@
 
 #define TLV_DB_PATH_PREFIX "/tmp/btstack_"
 #define TLV_DB_PATH_POSTFIX ".tlv"
-#define LOG_FILE_PATH "logs/Bluetooth/hci_dump.pklg"
+#define LOG_FILE_PATH "logs/hci_dump.pklg"
 
 static char tlv_db_path[100];
 static const btstack_tlv_t *tlv_impl;
