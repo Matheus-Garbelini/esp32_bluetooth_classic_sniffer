@@ -24,3 +24,11 @@ runtime/licenses/
 runtime/PYTHON.json
 
 runtime/success
+
+firmware/.cache/
+
+firmware/packages/
+
+firmware/platforms/
+
+firmware/appstate.json
