@@ -24,7 +24,7 @@ class SnifferBREDR:
     TAG = 'Sniffer'
     working_dir = None
     wireshark_process = None
-    pcap_fifo_filename = '/tmp/fifocap.fifo'
+    pcap_fifo_filename = 'runtime/fifocap.fifo'
     pcap_filename = 'logs/capture_bluetooth.pcapng'
     save_pcap = False
     pcap_fifo_writer = None
