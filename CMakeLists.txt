@@ -5,14 +5,17 @@ project(
   LANGUAGES CXX C
   VERSION 1.0)
 
-set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
-set(CMAKE_BUILD_RPATH $ORIGIN host_stack runtime/install/lib/)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY host_stack)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY host_stack)
-
 set(PYTHON3_URL
     "https://github.com/indygreg/python-build-standalone/releases/download/20210506/cpython-3.8.10-x86_64-unknown-linux-gnu-pgo+lto-20210506T0943.tar.zst"
 )
+
+set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
+set(CMAKE_BUILD_RPATH $ORIGIN host_stack runtime/install/lib/)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/host_stack)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/host_stack)
+
+# * pthreads
+find_package(Threads REQUIRED)
 
 if(NOT EXISTS ${PROJECT_SOURCE_DIR}/runtime/success)
   file(DOWNLOAD ${PYTHON3_URL} ${PROJECT_SOURCE_DIR}/runtime.tar.zst
@@ -28,7 +31,8 @@ if(NOT EXISTS ${PROJECT_SOURCE_DIR}/runtime/success)
   endif(PYTHON_ERROR)
   # Install requirements from requirements.txt
   execute_process(
-    COMMAND bash -c "./runtime/install/bin/python3 -m pip install -r ./requirements.txt"
+    COMMAND bash -c
+            "./runtime/install/bin/python3 -m pip install -r ./requirements.txt"
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     ERROR_VARIABLE PYTHON_ERROR)
   if(PYTHON_ERROR)
@@ -80,7 +84,7 @@ foreach(BT_PROGRAM_FILE ${BT_PROGRAMS})
        ${BTSTACK_ROOT}/platform/posix/btstack_run_loop_posix.c
        ${PROJECT_SOURCE_DIR}/host_stack/bt_stack.cpp)
   add_executable(${BT_PROGRAM} ${BT_PROGRAM_FILE})
-  target_link_libraries(${BT_PROGRAM} btstack pthread)
+  target_link_libraries(${BT_PROGRAM} ${CMAKE_THREAD_LIBS_INIT} btstack)
   target_include_directories(${BT_PROGRAM} PRIVATE ${BT_INCLUDES})
 endforeach()
 
