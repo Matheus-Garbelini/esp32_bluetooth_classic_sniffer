@@ -13,15 +13,11 @@ import click
 from threading import Thread
 from time import sleep
 from colorama import Fore, init
-
-sys.path.insert(0, os.getcwd() + '/libs')
-
-from scapy.layers.bluetooth import HCI_Hdr, ESP32_BREDR, BT_Baseband, BT_ACL_Hdr, BT_LMP, HCI_PHDR_Hdr
+from scapy.layers.bluetooth import HCI_Hdr, HCI_PHDR_Hdr
 from scapy.utils import wrpcap, PcapWriter
-from ESP32BTDriver import ESP32BTDriver
-
-
-init(autoreset=True)
+# Custom libs
+from src.layers_bredr import ESP32_BREDR, BT_Baseband, BT_ACL_Hdr, BT_LMP
+from src.ESP32BTDriver import ESP32BTDriver
 
 
 class SnifferBREDR:
@@ -262,4 +258,5 @@ def sniffer(port, host, target, live_wireshark, live_terminal, bridge_only):
 
 
 if __name__ == '__main__':
+    init(autoreset=True)
     sniffer()

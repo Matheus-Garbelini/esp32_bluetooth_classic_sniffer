@@ -2,3 +2,4 @@ colorama
 pyserial
 click
 platformio
+scapy==2.4.5
