@@ -41,4 +41,7 @@ clang --std=gnu11 -fPIC -w -O3 -shared -o h4bcm.so build/packet-btbrlmp.c.o buil
 
 mkdir -p $WIRESHARK_PLUGINS_FOLDER
 echo "Copying h4bcm.so to $WIRESHARK_PLUGINS_FOLDER"
-sudo cp h4bcm.so $WIRESHARK_PLUGINS_FOLDER
+cp h4bcm.so $WIRESHARK_PLUGINS_FOLDER
+# Set permission to dumpcap
+echo -e "Setting permission to dumpcap: sudo chmod +x /usr/bin/dumpcap\n"
+sudo chmod +x /usr/bin/dumpcap
