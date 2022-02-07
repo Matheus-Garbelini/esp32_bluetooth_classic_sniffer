@@ -1,0 +1,3 @@
+[submodule "firmware/esp32_firmware_patching_framework"]
+	path = firmware/esp32_firmware_patching_framework
+	url = https://github.com/Matheus-Garbelini/esp32_firmware_patching_framework

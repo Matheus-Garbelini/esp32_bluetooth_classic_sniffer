@@ -18,7 +18,8 @@ Differently than <u>**passive**</u> sniffers, which do not interact with the BT 
     - [Example 1 - Connect to remote target (Master Role)](#example-1---connect-to-remote-target-master-role)
     - [Example 2 - Wait for BT connection (Slave Role)](#example-2---wait-for-bt-connection-slave-role)
     - [Example 3 - HCI Bridge Mode (connect with other BT Host stack)](#example-3---hci-bridge-mode-connect-with-other-bt-host-stack)
-- [3) Customising BT Host programs (Profiles)](#3-customising-bt-host-programs-profiles)
+- [3) Compile firmware from source (ESP32 Patching Framework)](#3-compile-firmware-from-source-esp32-patching-framework)
+- [4) Customising BT Host programs (Profiles)](#4-customising-bt-host-programs-profiles)
 - [Software Architecture of BrakTooth Sniffer](#software-architecture-of-braktooth-sniffer)
 - [Features Overview](#features-overview)
 - [Acknowledgements](#acknowledgements)
@@ -93,7 +94,22 @@ Lastly, the `--bridge-only`  only creates the HCI pseudo terminal (/dev/pts/x) s
 <img src="docs/mode_bridge_only.png" alt="mode_bridge_only" width="600" height="auto" />
 </p>
 
-### 3) Customising BT Host programs (Profiles)
+
+### 3) Compile firmware from source (ESP32 Patching Framework)
+
+The source code can be built directly from the [ESP32 Firmware Patching Framework](https://github.com/Matheus-Garbelini/esp32_firmware_patching_framework) repository as follows:
+
+```bash
+cd firmware
+./build_from_source.sh # clone submodule & build firmware with platformio environment 'sniffer-serial'
+./firmware.py flash <serial port> # flash built firmware to ESP32 via serial port
+```
+
+The ESP32 firmware binaries (firmware.bin, bootloader.bin, partitions.bin) are copied to `firmware` folder upon successful build. Then, you can proceed to flash the firmware as described in [step 1.B)](https://github.com/Matheus-Garbelini/esp32_bluetooth_classic_sniffer#b-flash-custom-firmware-to-esp32).
+
+
+
+### 4) Customising BT Host programs (Profiles)
 
 Since *BrakTooth* sniffer uses a BT host stack to guide connectivity, the following modified BlueKitchen examples are used:
 
