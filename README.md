@@ -48,8 +48,12 @@ cd esp32_bluetooth_classic_sniffer
 Before starting to use *BrakTooth* Sniffer, you need to upload a custom firmware to your ESP32 board:
 
 ```bash
+sudo chown $USER:$USER /dev/ttyUSB0 # Give user permission to serial port to avoid using sudo
 ./firmware.py flash /dev/ttyUSB0 # Change ttyUSB0 to match your port name
+# Note: ESP-WROVER-KIT or ESP-ETHERNET-KIT uses /dev/ttyUSB1 instead as the first port is for the FTDI JTAG circuit.
 ```
+
+**Important: Some boards requires you to hold the BOOT button to properly put ESP32 into flashing mode.**
 
 ### 2) Usage Instructions
 
