@@ -3731,7 +3731,7 @@ void dissect_ping_res(proto_tree *tree, tvbuff_t *tvb, int offset, int len)
 
 /* Link Manager Protocol */
 static int
-dissect_btbrlmp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree)
+dissect_btbrlmp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *foo) // Dummy parameter required by new Wireshark API
 {
 	proto_item *lmp_item;
 	proto_tree *lmp_tree;
